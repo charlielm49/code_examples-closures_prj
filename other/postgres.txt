@@ -1,0 +1,159 @@
+
+
+
+[After postgres installation do:]
+$ su
+Password: <root password>
+$ su postgres
+$ psql
+> \password postgres [in $ psql command line]
+> Enter new password for user postgres: C4rl1t0$
+> CREATE DATABASE mytestdb;
+> \q
+
+To test the connection to your new database, use the following command:
+$ psql -d mytestdb -U postgres -h localhost -W
+Password: <enter password>
+psql (15.7 (Debian 15.7-0+deb12u1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, compression: off)
+Type "help" for help.
+
+
+CREATE TABLE Rankings (
+    Id SERIAL PRIMARY KEY NOT NULL,
+    Brand VARCHAR(50),
+    PP100 INT
+)
+
+INSERT INTO Rankings (Brand, PP100) VALUES
+('Land Rover', 273),
+('Audi', 252),
+('Lincoln', 244),
+('Ford', 228),
+('Mercedes-Benz', 220)
+
+CREATE TABLE repairs (
+    Id SERIAL PRIMARY KEY NOT NULL,
+    Brand VARCHAR(50),
+    repairs INT
+)
+
+INSERT INTO repairs (Brand, repairs) VALUES
+('Land Rover', 173),
+('Audi', 152),
+('Lincoln', 144),
+('Ford', 128),
+('Mercedes-Benz', 120)
+
+-- List databases
+$ \l
+
+-- Use a specified database (creates a new connection)
+postgres=# \c carbrandrankings
+Password:
+
+-- Show tables:
+carbrandrankings=# \d or \dt
+               List of relations
+ Schema |      Name       |   Type   |  Owner   
+--------+-----------------+----------+----------
+ public | rankings        | table    | postgres
+ public | rankings_id_seq | sequence | postgres
+ public | repairs         | table    | postgres
+ public | repairs_id_seq  | sequence | postgres
+
+-- SELECT
+carbrandrankings=# SELECT * FROM rankings;
+ id |     brand     | pp100 
+----+---------------+-------
+  1 | Land Rover    |   273
+  2 | Audi          |   252
+  3 | Lincoln       |   244
+
+
+https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-serial/index.html
+-- Using PostgreSQL SERIAL to Create Auto-increment Column
+
+-- To get the inserted id (DOESN'T WORK UNTIL AFTER INSERTING)
+SELECT currval(pg_get_serial_sequence('rankings', 'id'));
+ERROR:  currval of sequence "rankings_id_seq" is not yet defined in this session
+
+INSERT INTO rankings(brand, pp100) VALUES('Honda', '201');
+INSERT 0 1
+[OK]
+
+carbrandrankings=# SELECT currval(pg_get_serial_sequence('rankings', 'id'));
+ currval 
+---------
+       7
+(1 row)
+
+
+INSERT INTO rankings(brand, pp100) 
+VALUES('VW', '200')
+RETURNING id;
+ id 
+----
+  8
+(1 row)
+
+INSERT 0 1
+
+
+-- Quit
+\q
+
+
+
+
+
+Using python API
+
+import psycopg2
+
+connection = psycopg2.connect(
+    host="localhost",  # your host
+    port = "5432",
+    user="postgres",       # username
+    password="C4rl1t0$",     # password
+    database="carbrandrankings")   # name of the database
+
+cur = connection.cursor()
+
+-- SELECT
+cur.execute("SELECT * from rankings")
+rows = cur.fetchall()
+rows
+#Out[]:
+[(1, 'Land Rover', 273),
+ (2, 'Audi', 252),
+ (3, 'Lincoln', 244),
+ (4, 'Ford', 228),
+ (5, 'Mercedes-Benz', 220)]
+
+
+-- INSERTING
+cur.execute("INSERT INTO rankings(brand, pp100) VALUES('Toyota', '219')");
+
+connection.commit()
+cur.close()
+connection.close()
+
+-- To get the inserted id 
+cur.execute("SELECT currval(pg_get_serial_sequence('rankings', 'id'));")
+In [22]: rows = cur.fetchall()
+In [23]: rows
+Out[23]: [(6,)]
+
+In [27]: rows = cur.fetchone()
+In [28]: rows
+Out[28]: (6,)
+
+
+cur.execute("INSERT INTO rankings(brand, pp100) \
+VALUES('Kia', '198') RETURNING id;")
+#Out[]:
+In [37]: cur.fetchone()
+Out[37]: (9,)
+
+
